@@ -19,10 +19,7 @@ export const userRepository = {
   },
 
   update: async (id, data) => {
-    return await User.findByIdAndUpdate(id, data, {
-      new: true,
-      runValidators: true
-    });
+    return await User.findByIdAndUpdate(id, data, { returnDocument: "after" });
   },
 
   delete: async (id) => {

@@ -29,10 +29,7 @@ export const gradeRepository = {
   },
 
   update: async (id, data) => {
-    return await Grade.findByIdAndUpdate(id, data, {
-      new: true,
-      runValidators: true
-    });
+    return await Grade.findByIdAndUpdate(id, data, { returnDocument: "after" });
   },
 
   delete: async (id) => {
