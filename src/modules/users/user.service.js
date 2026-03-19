@@ -1,7 +1,10 @@
-import { userRepository } from "../repository/user.repository.js";
+import bcrypt from "bcryptjs";
+import { userRepository } from "./user.repository.js";
+
+const SALT_ROUNDS = 10;
 
 export const userService = {
-
+  
   getAllUsers: async () => {
     return await userRepository.findAll();
   },
@@ -28,10 +31,20 @@ export const userService = {
       throw error;
     }
 
+    // 🔐 HASH PASSWORD
+    const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+    data.password = hashedPassword;
+
     return await userRepository.create(data);
   },
 
   updateUser: async (id, data) => {
+
+    // 🔐 Si actualizan password → hashear
+    if (data.password) {
+      const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+      data.password = hashedPassword;
+    }
 
     const user = await userRepository.update(id, data);
 
@@ -55,6 +68,6 @@ export const userService = {
     }
 
     return user;
-  }
+  },
 
 };

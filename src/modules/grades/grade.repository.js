@@ -1,4 +1,4 @@
-import { Grade } from "../models/grade.model.js";
+import { Grade } from "./grade.model.js";
 
 export const gradeRepository = {
 

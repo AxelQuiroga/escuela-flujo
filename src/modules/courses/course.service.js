@@ -1,4 +1,4 @@
-import { courseRepository } from "../repository/course.repository.js";
+import { courseRepository } from "./course.repository.js";
 
 export const courseService = {
 
