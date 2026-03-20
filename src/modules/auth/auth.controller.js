@@ -6,6 +6,9 @@ export const login = async (req, res, next) => {
 
     res.json(data);
   } catch (error) {
+     if (error.message === "Credenciales inválidas") {
+      return res.status(401).json({ message: error.message });
+    }
     next(error);
   }
 };

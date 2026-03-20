@@ -25,7 +25,7 @@ export const gradeService = {
       .populate("curso");
   },
 
-  // 🔥 CLAVE para profesor
+  //  CLAVE para profesor
   getGradesByProfesor: async (profesorId) => {
     return await Grade.find()
       .populate({
@@ -42,7 +42,7 @@ export const gradeService = {
 
   updateGrade: async (id, data) => {
     return await Grade.findByIdAndUpdate(id, data, {
-      new: true
+      returnDocument: 'after'
     });
   },
 

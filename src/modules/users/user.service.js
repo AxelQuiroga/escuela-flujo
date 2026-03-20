@@ -40,7 +40,7 @@ export const userService = {
 
   updateUser: async (id, data) => {
 
-    // 🔐 Si actualizan password → hashear
+    //  Si actualizan password → hashear
     if (data.password) {
       const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
       data.password = hashedPassword;

@@ -1,4 +1,5 @@
 import { gradeService } from "./grade.service.js";
+import { courseService } from "../courses/course.service.js";
 
 const isProfesorOwner = (course, userId) =>
   course.profesor.toString() === userId;
