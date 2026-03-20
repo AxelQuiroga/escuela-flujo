@@ -11,9 +11,12 @@ Construido con Node.js, Express y MongoDB usando arquitectura por capas.
 * Express
 * MongoDB
 * Mongoose
-* CORS
+* bcryptjs
+* jsonwebtoken
 * dotenv
 * Nodemon
+* Jest
+* Supertest
 
 ---
 
@@ -27,33 +30,37 @@ src
 ├── config
 │   └── db.js
 │
-├── models
-│   ├── user.model.js
-│   ├── course.model.js
-│   └── grade.model.js
+├── constants
+│   └── roles.js
 │
-├── repositories
-│   ├── user.repository.js
-│   ├── course.repository.js
-│   └── grade.repository.js
+├── middlewares
+│   ├── auth.middleware.js
+│   ├── error.middleware.js
+│   └── role.middleware.js
 │
-├── services
-│   ├── user.service.js
-│   ├── course.service.js
-│   └── grade.service.js
-│
-├── controllers
-│   ├── user.controller.js
-│   ├── course.controller.js
-│   └── grade.controller.js
-│
-├── routes
-│   ├── user.routes.js
-│   ├── course.routes.js
-│   └── grade.routes.js
-│
-├── middleware
-│   └── error.middleware.js
+├── modules
+│   ├── auth
+│   │   ├── auth.controller.js
+│   │   ├── auth.routes.js
+│   │   └── auth.service.js
+│   ├── users
+│   │   ├── user.controller.js
+│   │   ├── user.model.js
+│   │   ├── user.repository.js
+│   │   ├── user.routes.js
+│   │   └── user.service.js
+│   ├── courses
+│   │   ├── course.controller.js
+│   │   ├── course.model.js
+│   │   ├── course.repository.js
+│   │   ├── course.routes.js
+│   │   └── course.service.js
+│   └── grades
+│       ├── grade.controller.js
+│       ├── grade.model.js
+│       ├── grade.repository.js
+│       ├── grade.routes.js
+│       └── grade.service.js
 │
 ├── app.js
 └── server.js
@@ -64,7 +71,7 @@ Flujo de una petición:
 ```
 Request
  → Route
- → Middleware
+ → Middleware (Auth/Role)
  → Controller
  → Service
  → Repository
@@ -89,7 +96,7 @@ Campos principales:
 
 * name
 * email
-* password
+* password (hasheado con bcryptjs)
 * role
 
 ---
@@ -120,9 +127,17 @@ Campos:
 
 ---
 
-## Reglas del sistema
+## Autenticación y Autorización
 
-### Director
+### JWT Authentication
+
+* Login con email y password
+* Token JWT con expiración de 1 hora
+* Middleware de autenticación para rutas protegidas
+
+### Roles y Permisos
+
+#### Director
 
 Puede:
 
@@ -131,32 +146,34 @@ Puede:
 * eliminar alumnos
 * editar alumnos
 * ver notas
+* crear usuarios
+* eliminar cursos
 
 No puede:
 
 * modificar notas
 
----
-
-### Profesor
+#### Profesor
 
 Puede:
 
 * ver alumnos de su curso
 * crear notas
 * editar notas de su curso
+* ver cursos
+* crear cursos
 
 No puede:
 
 * modificar cursos de otros profesores
+* gestionar usuarios
 
----
-
-### Alumno
+#### Alumno
 
 Puede:
 
 * ver únicamente sus notas
+* ver su curso asignado
 
 ---
 
@@ -164,19 +181,14 @@ Puede:
 
 Clonar el repositorio:
 
-```
-git clone <repo-url>
-```
-
-Entrar en el proyecto:
-
-```
-cd project
+```bash
+git clone https://github.com/AxelQuiroga/escuela-flujo.git
+cd escuela-flujo
 ```
 
 Instalar dependencias:
 
-```
+```bash
 npm install
 ```
 
@@ -186,9 +198,18 @@ npm install
 
 Crear archivo `.env`:
 
+```bash
+PORT=8067
+MONGO_URI=mongodb://localhost:27017/school_management
+JWT_SECRET=your_secret_key_here
 ```
-PORT=asignar
-MONGO_URI=mongodb://localhost:27017/tuuser
+
+Para pruebas, usar `.env.test`:
+
+```bash
+PORT=8068
+MONGO_URI=mongodb://localhost:27017/test_school_management
+JWT_SECRET=test_secret_key
 ```
 
 ---
@@ -197,64 +218,112 @@ MONGO_URI=mongodb://localhost:27017/tuuser
 
 Modo desarrollo:
 
-```
+```bash
 npm run dev
+```
+
+Modo producción:
+
+```bash
+npm start
 ```
 
 Servidor:
 
-```
+```bash
 http://localhost:8067
 ```
 
 ---
 
-## Endpoints principales
+## Endpoints
 
-### Users
+### Autenticación
 
+```bash
+POST /auth/login
 ```
-GET /users
-GET /users/:id
-POST /users
-PUT /users/:id
-DELETE /users/:id
+
+### Usuarios
+
+```bash
+GET /user              # Solo DIRECTOR
+GET /user/:id          # Director o dueño
+POST /user             # Solo DIRECTOR
+PUT /user/:id          # Director o dueño
+DELETE /user/:id       # Solo DIRECTOR
+```
+
+### Cursos
+
+```bash
+GET /course                    # Director y PROFESOR
+GET /course/:id                # Todos los roles (con validación)
+POST /course                   # Director y PROFESOR
+PUT /course/:id                # Director y PROFESOR (con ownership)
+DELETE /course/:id             # Solo DIRECTOR
+POST /course/:id/alumnos       # Director y PROFESOR
+DELETE /course/:id/alumnos/:id # Director y PROFESOR
+```
+
+### Notas
+
+```bash
+GET /grade                     # Director y PROFESOR
+GET /grade/:id                 # Todos (con validación)
+GET /grade/alumno/:id          # Solo dueño o roles autorizados
+POST /grade                    # Solo PROFESOR
+PUT /grade/:id                 # Solo PROFESOR
+DELETE /grade/:id              # Solo PROFESOR
 ```
 
 ---
 
-### Courses
+## Testing
 
+El proyecto incluye tests completos con Jest y Supertest:
+
+```bash
+# Ejecutar todos los tests
+npm test
+
+# Ejecutar en modo watch
+npm run test:watch
 ```
-GET /courses
-GET /courses/:id
-POST /courses
-PUT /courses/:id
-DELETE /courses/:id
-```
+
+### Cobertura de Tests
+
+* **37 tests** cubriendo todos los endpoints
+* Tests de autenticación y autorización
+* Validación de permisos por rol
+* Tests de casos límite y errores
+* Base de datos aislada para pruebas
 
 ---
 
-### Grades
+## Características Implementadas
 
-```
-GET /grades
-GET /grades/:id
-GET /grades/alumno/:id
-POST /grades
-PUT /grades/:id
-DELETE /grades/:id
-```
+✅ **Autenticación JWT** completa  
+✅ **Autorización por roles** con middleware  
+✅ **Validaciones de negocio** por rol  
+✅ **Password hashing** con bcryptjs  
+✅ **Manejo de errores** centralizado  
+✅ **Tests automatizados** completos  
+✅ **Arquitectura limpia** por capas  
+✅ **Base de datos relacional** con referencias  
 
 ---
 
 ## Mejoras futuras
 
-* Autenticación con JWT
-* Middleware de autorización por roles
-* Validación con Zod o Joi
-* Tests con Jest
+* Validación de entrada con Zod o Joi
+* Sistema de logs
+* Rate limiting
+* Cache con Redis
 * Dockerización del proyecto
+* Documentación con Swagger/OpenAPI
+* Sistema de notificaciones
+* Backup de datos
 
 ---
 
