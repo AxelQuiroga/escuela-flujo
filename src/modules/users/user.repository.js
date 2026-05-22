@@ -1,41 +1,40 @@
-import { User } from "./user.model.js"; 
+export const userRepository = (UserModel) => {
 
-export const userRepository = {
+  return {
+    findAll: async () => {
+      return await UserModel.find().select("-password");
+    },
 
-  findAll: async () => {
-    return await User.find().select("-password");
-  },
+    findById: async (id) => {
+      return await UserModel.findById(id).select("-password");
+    },
 
-  findById: async (id) => {
-    return await User.findById(id).select("-password");
-  },
+    findByEmail: async (email) => {
+      // acá SÍ necesitamos el password (para login)
+      return await UserModel.findOne({ email });
+    },
 
-  findByEmail: async (email) => {
-    // acá SÍ necesitamos el password (para login)
-    return await User.findOne({ email });
-  },
+    create: async (data) => {
+      const user = await UserModel.create(data);
 
-  create: async (data) => {
-    const user = await User.create(data);
+      // devolver sin password
+      const { password, ...userWithoutPassword } = user.toObject();
+      return userWithoutPassword;
+    },
 
-    // devolver sin password
-    const { password, ...userWithoutPassword } = user.toObject();
-    return userWithoutPassword;
-  },
+    update: async (id, data) => {
+      const user = await UserModel.findByIdAndUpdate(id, data, {
+         returnDocument: 'after'
+      });
 
-  update: async (id, data) => {
-    const user = await User.findByIdAndUpdate(id, data, {
-       returnDocument: 'after'
-    });
+      if (!user) return null;
 
-    if (!user) return null;
+      const { password, ...userWithoutPassword } = user.toObject();
+      return userWithoutPassword;
+    },
 
-    const { password, ...userWithoutPassword } = user.toObject();
-    return userWithoutPassword;
-  },
-
-  delete: async (id) => {
-    return await User.findByIdAndDelete(id);
+    delete: async (id) => {
+      return await UserModel.findByIdAndDelete(id);
+    }
   }
-
 };
