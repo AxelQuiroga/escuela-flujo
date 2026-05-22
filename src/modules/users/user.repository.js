@@ -25,7 +25,7 @@ export const userRepository = {
 
   update: async (id, data) => {
     const user = await User.findByIdAndUpdate(id, data, {
-      new: true
+       returnDocument: 'after'
     });
 
     if (!user) return null;

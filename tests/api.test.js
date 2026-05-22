@@ -199,7 +199,7 @@ describe('API Endpoints Tests', () => {
         .delete(`/user/${alumnoId}`)
         .set('Authorization', `Bearer ${directorToken}`);
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(204);
     });
 
     test('DELETE /user/:id - Profesor no puede eliminar usuario', async () => {

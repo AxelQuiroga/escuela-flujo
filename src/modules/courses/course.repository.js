@@ -25,7 +25,7 @@ export const courseRepository = {
 
   update: async (id, data) => {
     return await Course.findByIdAndUpdate(id, data, {
-      new: true,
+       returnDocument: 'after',
       runValidators: true
     });
   },
@@ -38,7 +38,7 @@ export const courseRepository = {
     return await Course.findByIdAndUpdate(
       courseId,
       { $addToSet: { alumnos: alumnoId } },
-      { new: true }
+      {  returnDocument: 'after' }
     );
   },
 
@@ -46,7 +46,7 @@ export const courseRepository = {
     return await Course.findByIdAndUpdate(
       courseId,
       { $pull: { alumnos: alumnoId } },
-      { new: true }
+      {  returnDocument: 'after'}
     );
   }
 

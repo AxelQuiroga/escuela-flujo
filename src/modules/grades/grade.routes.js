@@ -1,34 +1,38 @@
 import { Router } from "express";
-import {
-  getGrades,
-  getGrade,
-  getGradesByAlumno,
-  createGrade,
-  updateGrade,
-  deleteGrade
-} from "./grade.controller.js";
+import { Grade } from "./grade.model.js";
+import { gradeService } from "./grade.service.js";
+import { gradeRepository } from "./grade.repository.js"
+import { createGradeController } from "./grade.controller.js";
 
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import roleMiddleware from "../../middlewares/role.middleware.js";
 
+import { courseRepository } from "../courses/course.repository.js";
+import { courseService } from "../courses/course.service.js"
+
+const repoDeNotas = gradeRepository(Grade);
+const servicioDeNotas = gradeService(repoDeNotas);
+const servicioDeCursos = courseService(courseRepository);
+const controller = createGradeController(servicioDeNotas, servicioDeCursos);
+
 const router = Router();
 
 // 👑 DIRECTOR y PROFESOR
-router.get("/", authMiddleware, roleMiddleware("DIRECTOR", "PROFESOR"), getGrades);
+router.get("/", authMiddleware, roleMiddleware("DIRECTOR", "PROFESOR"), controller.getGrades);
 
 // 👨‍🎓 ver sus notas
-router.get("/alumno/:alumnoId", authMiddleware, getGradesByAlumno);
+router.get("/alumno/:alumnoId", authMiddleware, controller.getGradesByAlumno);
 
 // 👑 + 👨‍🏫 + 👨‍🎓 (validación interna)
-router.get("/:id", authMiddleware, getGrade);
+router.get("/:id", authMiddleware, controller.getGrade);
 
 // 👨‍🏫 crear
-router.post("/", authMiddleware, roleMiddleware("PROFESOR"), createGrade);
+router.post("/", authMiddleware, roleMiddleware("PROFESOR"), controller.createGrade);
 
 // 👨‍🏫 editar
-router.put("/:id", authMiddleware, roleMiddleware("PROFESOR"), updateGrade);
+router.put("/:id", authMiddleware, roleMiddleware("PROFESOR"), controller.updateGrade);
 
 // 👨‍🏫 eliminar (opcional)
-router.delete("/:id", authMiddleware, roleMiddleware("PROFESOR"), deleteGrade);
+router.delete("/:id", authMiddleware, roleMiddleware("PROFESOR"), controller.deleteGrade);
 
 export default router;

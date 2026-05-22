@@ -1,39 +1,51 @@
-import { Grade } from "./grade.model.js";
 
-export const gradeRepository = {
 
-  findAll: async () => {
-    return await Grade.find()
-      .populate("alumno", "name email")
-      .populate("curso", "name division");
-  },
+export const gradeRepository = (GradeModel) => {
 
-  findById: async (id) => {
-    return await Grade.findById(id)
-      .populate("alumno", "name email")
-      .populate("curso", "name division");
-  },
+  return {
+    findAll: async () => {
+      return await GradeModel.find()
+        .populate("alumno", "name email")
+        .populate("curso", "name division");
+    },
 
-  findByAlumno: async (alumnoId) => {
-    return await Grade.find({ alumno: alumnoId })
-      .populate("curso", "name division");
-  },
+    findById: async (id) => {
+      return await GradeModel.findById(id)
+        .populate("alumno", "name email")
+        .populate("curso", "name division");
+    },
 
-  findByCurso: async (cursoId) => {
-    return await Grade.find({ curso: cursoId })
-      .populate("alumno", "name email");
-  },
+    findByAlumno: async (alumnoId) => {
+      return await GradeModel.find({ alumno: alumnoId })
+        .populate("curso", "name division");
+    },
 
-  create: async (data) => {
-    return await Grade.create(data);
-  },
+    findByCurso: async (cursoId) => {
+      return await GradeModel.find({ curso: cursoId })
+        .populate("alumno", "name email");
+    },
 
-  update: async (id, data) => {
-    return await Grade.findByIdAndUpdate(id, data, { returnDocument: "after" });
-  },
+    findByProfesor: async (profesorId) => {
+      return await GradeModel.find()
+        .populate({
+          path: "curso",
+          match: { profesor: profesorId }
+        })
+        .populate("alumno")
+        .then(grades => grades.filter(g => g.curso !== null));
+    },
 
-  delete: async (id) => {
-    return await Grade.findByIdAndDelete(id);
+    create: async (data) => {
+      return await GradeModel.create(data);
+    },
+
+    update: async (id, data) => {
+      return await GradeModel.findByIdAndUpdate(id, data, { returnDocument: "after" });
+    },
+
+    delete: async (id) => {
+      return await GradeModel.findByIdAndDelete(id);
+    }
+
   }
-
-};
+}
