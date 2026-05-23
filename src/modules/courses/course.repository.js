@@ -35,10 +35,18 @@ export const courseRepository = (CourseModel) => {
   },
 
   addAlumno: async (courseId, alumnoId) => {
-    return await CourseModel.findByIdAndUpdate(
-      courseId,
+    // Concurrencia: asegurar cupo máximo a nivel DB.
+    // Solo agrega si:
+    // - el alumno NO estaba ya en el array (evita duplicados)
+    // - la cantidad de alumnos actual es menor al cupoMaximo
+    return await CourseModel.findOneAndUpdate(
+      {
+        _id: courseId,
+        alumnos: { $ne: alumnoId },
+        $expr: { $lt: [{ $size: "$alumnos" }, "$cupoMaximo"] }
+      },
       { $addToSet: { alumnos: alumnoId } },
-      {  returnDocument: 'after' }
+      { returnDocument: "after" }
     );
   },
 

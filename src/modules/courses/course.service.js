@@ -71,12 +71,8 @@ export const courseService = (courseRepository, gradeRepository) => {
         error.status = 400;
         throw error;
       }
-
-      if (course.alumnos.length >= course.cupoMaximo) {
-        const error = new Error("El curso no tiene vacantes disponibles");
-        error.status = 400;
-        throw error;
-      }
+      // Concurrencia: NO validar cupo con course.alumnos.length acá.
+      // Esto es vulnerable a race conditions. El cupo se garantiza en el update atómico del repositorio.
 
       // 📚 Validar prerequisito si el curso lo requiere
       if (course.prerequisito) {
@@ -96,7 +92,16 @@ export const courseService = (courseRepository, gradeRepository) => {
         }
       }
 
-      return await courseRepository.addAlumno(courseId, alumnoId);
+      const updated = await courseRepository.addAlumno(courseId, alumnoId);
+
+      // Si el update atómico no matcheó, asumimos cupo lleno bajo concurrencia.
+      if (!updated) {
+        const error = new Error("El curso no tiene vacantes disponibles");
+        error.status = 400;
+        throw error;
+      }
+
+      return updated;
     },
 
     removeAlumno: async (courseId, alumnoId) => {

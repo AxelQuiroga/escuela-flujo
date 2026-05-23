@@ -655,6 +655,58 @@ describe('API Endpoints Tests', () => {
 
   });
 
+  describe('COURSE Concurrency', () => {
+    test('POST /course/:courseId/alumnos - Concurrencia: 10 alumnos intentan el Ãºltimo cupo (Promise.all)', async () => {
+      // Curso con cupo 1 y sin alumnos inscriptos
+      const limitedCourse = await Course.create({
+        name: 'Curso Cupo 1',
+        division: 'Z',
+        profesor: profesorId,
+        alumnos: [],
+        cupoMaximo: 1
+      });
+
+      // Creamos 10 alumnos distintos (distintos IDs, para que $addToSet no los "colapse")
+      const alumnos = await Promise.all(
+        Array.from({ length: 10 }).map((_, i) =>
+          User.create({
+            name: `Alumno Concur ${i}`,
+            email: `alumno.concur.${i}@test.com`,
+            password: 'password123',
+            role: 'ALUMNO'
+          })
+        )
+      );
+
+      // Disparamos 10 requests en paralelo intentando "ganarse" el Ãºnico cupo
+      const responses = await Promise.all(
+        alumnos.map((a) =>
+          request(app)
+            .post(`/course/${limitedCourse._id}/alumnos`)
+            .set('Authorization', `Bearer ${profesorToken}`)
+            .send({ alumnoId: a._id })
+        )
+      );
+
+      const ok = responses.filter((r) => r.status === 200);
+      const fail = responses.filter((r) => r.status !== 200);
+
+      // Con el fix atÃ³mico: exactamente 1 Ã©xito.
+      // Con el cÃ³digo anterior: esto puede fallar (2+ Ã©xitos) por race condition.
+      expect(ok).toHaveLength(1);
+
+      // Los demÃ¡s deben fallar por cupo (contrato esperado)
+      fail.forEach((r) => {
+        expect(r.status).toBe(400);
+        expect(r.body.message).toBe("El curso no tiene vacantes disponibles");
+      });
+
+      // Invariante final: en DB no puede haber mÃ¡s de 1 inscripto
+      const courseAfter = await Course.findById(limitedCourse._id);
+      expect(courseAfter.alumnos).toHaveLength(1);
+    }, 30000);
+  });
+
   describe('Middleware Tests', () => {
     test('Acceso sin token - debería retornar 401', async () => {
       const response = await request(app)
