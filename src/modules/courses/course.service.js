@@ -55,7 +55,7 @@ export const courseService = (courseRepository) => {
 
     addAlumno: async (courseId, alumnoId) => {
 
-      const course = await courseRepository.addAlumno(courseId, alumnoId);
+      const course = await courseRepository.findById(courseId);
 
       if (!course) {
         const error = new Error("Course not found");
@@ -63,7 +63,22 @@ export const courseService = (courseRepository) => {
         throw error;
       }
 
-      return course;
+      const yaInscripto = course.alumnos.some(
+        (al) => al._id.toString() === alumnoId.toString()
+      );
+      if (yaInscripto) {
+        const error = new Error("El alumno ya está inscrito en este curso");
+        error.status = 400;
+        throw error;
+      }
+
+      if (course.alumnos.length >= course.cupoMaximo) {
+        const error = new Error("El curso no tiene vacantes disponibles");
+        error.status = 400;
+        throw error;
+      }
+
+      return await courseRepository.addAlumno(courseId, alumnoId);
     },
 
     removeAlumno: async (courseId, alumnoId) => {

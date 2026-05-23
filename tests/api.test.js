@@ -329,6 +329,47 @@ describe('API Endpoints Tests', () => {
 
       expect(response.status).toBe(200);
     });
+
+    test('POST /course/:courseId/alumnos - No permite agregar a un alumno que ya está inscrito', async () => {
+  // Intentamos agregar a 'alumnoId', que ya forma parte de 'courseId' (creado en el beforeEach)
+  const response = await request(app)
+    .post(`/course/${courseId}/alumnos`)
+    .set('Authorization', `Bearer ${profesorToken}`)
+    .send({ alumnoId });
+
+  expect(response.status).toBe(400);
+  expect(response.body.message).toBe("El alumno ya está inscrito en este curso");
+});
+
+  test('POST /course/:courseId/alumnos - No permite agregar alumno si el cupo está lleno', async () => {
+  // Creamos un curso con cupoMaximo: 1 que ya tiene a 'alumnoId' inscripto
+  const fullCourse = await Course.create({
+    name: 'Historia Antigua',
+    division: 'B',
+    profesor: profesorId,
+    alumnos: [alumnoId],
+    cupoMaximo: 1
+  });
+
+  // Creamos otro alumno nuevo que va a intentar colarse
+  const extraAlumno = await User.create({
+    name: 'Extra Alumno',
+    email: 'extra@test.com',
+    password: 'password123',
+    role: 'ALUMNO'
+  });
+
+  // Intentamos inscribir al extra en el curso que ya no tiene vacantes
+  const response = await request(app)
+    .post(`/course/${fullCourse._id}/alumnos`)
+    .set('Authorization', `Bearer ${profesorToken}`)
+    .send({ alumnoId: extraAlumno._id });
+
+  expect(response.status).toBe(400);
+  expect(response.body.message).toBe("El curso no tiene vacantes disponibles");
+});
+
+    
   });
 
   describe('GRADE Endpoints', () => {

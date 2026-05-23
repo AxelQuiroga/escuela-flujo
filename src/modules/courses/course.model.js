@@ -23,7 +23,12 @@ const courseSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
       }
-    ]
+    ],
+    cupoMaximo: {
+      type: Number,
+      required: true,
+      default: 30 
+    }
   },
   {
     timestamps: true
