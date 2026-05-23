@@ -1,14 +1,17 @@
-import { authService } from "./auth.service.js";
+export const authController = (authService) => {
 
-export const login = async (req, res, next) => {
-  try {
-    const data = await authService.login(req.body);
+  return {
+    login: async (req, res, next) => {
+      try {
+        const data = await authService.login(req.body);
 
-    res.json(data);
-  } catch (error) {
-     if (error.message === "Credenciales inválidas") {
-      return res.status(401).json({ message: error.message });
+        res.json(data);
+      } catch (error) {
+        if (error.message === "Credenciales inválidas") {
+          return res.status(401).json({ message: error.message });
+        }
+        next(error);
+      }
     }
-    next(error);
   }
 };

@@ -1,10 +1,7 @@
-
-const isProfesorOwner = (course, userId) =>
-  course.profesor.toString() === userId;
-
-const isAlumnoOwner = (alumnoId, userId) =>
-  alumnoId.toString() === userId;
-
+const getUserId = (userObjOrId) => {
+  if (!userObjOrId) return "";
+  return userObjOrId._id ? userObjOrId._id.toString() : userObjOrId.toString();
+};
 
 export const createGradeController = (gradeService, courseService) => {
 
@@ -58,20 +55,20 @@ export const createGradeController = (gradeService, courseService) => {
           return res.status(404).json({ message: "Nota no encontrada" });
         }
 
-        // 👑
+        // 👑 Director
         if (role === "DIRECTOR") {
           return res.json(grade);
         }
 
-        // 👨‍🎓
-        if (role === "ALUMNO" && grade.alumno.toString() === id) {
+        // 👨‍🎓 Alumno
+        if (role === "ALUMNO" && getUserId(grade.alumno) === id) {
           return res.json(grade);
         }
 
-        // 👨‍🏫 → validar curso
+        // 👨‍🏫 Profesor → validar curso
         if (
           role === "PROFESOR" &&
-          grade.curso.profesor.toString() === id
+          getUserId(grade.curso.profesor) === id
         ) {
           return res.json(grade);
         }
@@ -87,13 +84,17 @@ export const createGradeController = (gradeService, courseService) => {
       try {
         const { id } = req.user;
 
+        if (!req.body.curso) {
+          return res.status(400).json({ message: "El curso es requerido" });
+        }
+
         const course = await courseService.getCourseById(req.body.curso);
 
         if (!course) {
           return res.status(404).json({ message: "Curso no encontrado" });
         }
 
-        if (course.profesor.toString() !== id) {
+        if (getUserId(course.profesor) !== id) {
           return res.status(403).json({ message: "No autorizado" });
         }
 
@@ -116,7 +117,7 @@ export const createGradeController = (gradeService, courseService) => {
           return res.status(404).json({ message: "Nota no encontrada" });
         }
 
-        if (grade.curso.profesor.toString() !== id) {
+        if (getUserId(grade.curso.profesor) !== id) {
           return res.status(403).json({ message: "No autorizado" });
         }
 
@@ -139,14 +140,13 @@ export const createGradeController = (gradeService, courseService) => {
           return res.status(404).json({ message: "Nota no encontrada" });
         }
 
-        // ⚠️ asegurate que curso esté poblado o manejarlo en service
-        if (grade.curso.profesor.toString() !== id) {
+        if (getUserId(grade.curso.profesor) !== id) {
           return res.status(403).json({ message: "No autorizado" });
         }
 
         await gradeService.deleteGrade(req.params.id);
 
-        res.status(204).send();
+        res.status(200).send();
 
       } catch (error) {
         next(error);

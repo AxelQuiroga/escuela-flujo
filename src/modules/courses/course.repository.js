@@ -1,41 +1,41 @@
-import { Course } from "./course.model.js";
+export const courseRepository = (CourseModel) => {
 
-export const courseRepository = {
+  return {
 
   findAll: async () => {
-    return await Course.find()
+    return await CourseModel.find()
       .populate("profesor", "name email")
       .populate("alumnos", "name email");
   },
 
   findById: async (id) => {
-    return await Course.findById(id)
+    return await CourseModel.findById(id)
       .populate("profesor", "name email")
       .populate("alumnos", "name email");
   },
 
   findByProfesor: async (profesorId) => {
-    return await Course.find({ profesor: profesorId })
+    return await CourseModel.find({ profesor: profesorId })
       .populate("alumnos", "name email");
   },
 
   create: async (data) => {
-    return await Course.create(data);
+    return await CourseModel.create(data);
   },
 
   update: async (id, data) => {
-    return await Course.findByIdAndUpdate(id, data, {
+    return await CourseModel.findByIdAndUpdate(id, data, {
        returnDocument: 'after',
       runValidators: true
     });
   },
 
   delete: async (id) => {
-    return await Course.findByIdAndDelete(id);
+    return await CourseModel.findByIdAndDelete(id);
   },
 
   addAlumno: async (courseId, alumnoId) => {
-    return await Course.findByIdAndUpdate(
+    return await CourseModel.findByIdAndUpdate(
       courseId,
       { $addToSet: { alumnos: alumnoId } },
       {  returnDocument: 'after' }
@@ -43,11 +43,12 @@ export const courseRepository = {
   },
 
   removeAlumno: async (courseId, alumnoId) => {
-    return await Course.findByIdAndUpdate(
+    return await CourseModel.findByIdAndUpdate(
       courseId,
       { $pull: { alumnos: alumnoId } },
       {  returnDocument: 'after'}
     );
   }
 
+}
 };

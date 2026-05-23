@@ -1,9 +1,14 @@
 // helper 🔥
+const getUserId = (userObjOrId) => {
+  if (!userObjOrId) return "";
+  return userObjOrId._id ? userObjOrId._id.toString() : userObjOrId.toString();
+};
+
 const isProfesorOwner = (course, userId) =>
-  course.profesor.toString() === userId;
+  getUserId(course.profesor) === userId;
 
 const isAlumnoInCourse = (course, userId) =>
-  course.alumnos.some(al => al.toString() === userId);
+  course.alumnos.some(al => getUserId(al) === userId);
 
 // =======================
 
@@ -120,7 +125,7 @@ export const courseController = (courseService) => {
 
         await courseService.deleteCourse(req.params.id);
 
-        res.status(204).send();
+        res.status(200).send();
 
       } catch (error) {
         next(error);

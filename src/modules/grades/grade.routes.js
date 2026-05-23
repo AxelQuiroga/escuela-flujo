@@ -3,16 +3,17 @@ import { Grade } from "./grade.model.js";
 import { gradeService } from "./grade.service.js";
 import { gradeRepository } from "./grade.repository.js"
 import { createGradeController } from "./grade.controller.js";
-
+import { Course } from "../courses/course.model.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import roleMiddleware from "../../middlewares/role.middleware.js";
 
 import { courseRepository } from "../courses/course.repository.js";
 import { courseService } from "../courses/course.service.js"
 
+const courseModel = Course;
 const repoDeNotas = gradeRepository(Grade);
 const servicioDeNotas = gradeService(repoDeNotas);
-const servicioDeCursos = courseService(courseRepository);
+const servicioDeCursos = courseService(courseRepository(courseModel));
 const controller = createGradeController(servicioDeNotas, servicioDeCursos);
 
 const router = Router();

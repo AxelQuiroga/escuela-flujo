@@ -5,9 +5,10 @@ import { courseRepository } from "./course.repository.js"
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import roleMiddleware from "../../middlewares/role.middleware.js";
 import { courseController } from "./course.controller.js"
+import { Course } from "./course.model.js";
 
-
-const service = courseService(courseRepository);
+const courseModel = Course;
+const service = courseService(courseRepository(courseModel));
 const controller = courseController(service);
 
 const router = Router();
