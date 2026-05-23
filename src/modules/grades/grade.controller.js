@@ -45,6 +45,25 @@ export const createGradeController = (gradeService, courseService) => {
       }
     },
 
+    getBoletinByAlumno: async (req, res, next) => {
+      try {
+        const { role, id } = req.user;
+        const { alumnoId } = req.params;
+
+        // 👨‍🎓 solo puede ver su propio boletín | 👑 Director puede ver cualquiera
+        if (role === "ALUMNO" && alumnoId !== id) {
+          return res.status(403).json({ message: "No autorizado" });
+        }
+
+        const boletin = await gradeService.getBoletinByAlumno(alumnoId);
+
+        res.status(200).json(boletin);
+
+      } catch (error) {
+        next(error);
+      }
+    },
+
     getGrade: async (req, res, next) => {
       try {
         const { role, id } = req.user;
@@ -88,6 +107,7 @@ export const createGradeController = (gradeService, courseService) => {
           return res.status(400).json({ message: "El curso es requerido" });
         }
 
+        // 🔐 Verificar que el profesor es dueño del curso
         const course = await courseService.getCourseById(req.body.curso);
 
         if (!course) {
@@ -98,6 +118,7 @@ export const createGradeController = (gradeService, courseService) => {
           return res.status(403).json({ message: "No autorizado" });
         }
 
+        // ✅ La validación de alumno inscripto se hace en gradeService.createGrade
         const grade = await gradeService.createGrade(req.body);
 
         res.status(201).json(grade);

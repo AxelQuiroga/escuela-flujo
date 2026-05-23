@@ -111,6 +111,8 @@ Campos:
 * division
 * profesor (referencia a User)
 * alumnos (array de referencias a User)
+* cupoMaximo (límite de inscriptos, default: 30)
+* prerequisito (referencia a Course, opcional — correlatividad)
 
 ---
 
@@ -269,12 +271,13 @@ DELETE /course/:id/alumnos/:id # Director y PROFESOR
 ### Notas
 
 ```bash
-GET /grade                     # Director y PROFESOR
-GET /grade/:id                 # Todos (con validación)
-GET /grade/alumno/:id          # Solo dueño o roles autorizados
-POST /grade                    # Solo PROFESOR
-PUT /grade/:id                 # Solo PROFESOR
-DELETE /grade/:id              # Solo PROFESOR
+GET /grade                           # Director y PROFESOR
+GET /grade/:id                       # Todos (con validación)
+GET /grade/alumno/:id                # Solo dueño o DIRECTOR
+GET /grade/alumno/:id/boletin        # Solo dueño o DIRECTOR — Boletín académico
+POST /grade                          # Solo PROFESOR
+PUT /grade/:id                       # Solo PROFESOR
+DELETE /grade/:id                    # Solo PROFESOR
 ```
 
 ---
@@ -293,10 +296,11 @@ npm run test:watch
 
 ### Cobertura de Tests
 
-* **37 tests** cubriendo todos los endpoints
+* **45 tests** cubriendo todos los endpoints y reglas de negocio
 * Tests de autenticación y autorización
 * Validación de permisos por rol
-* Tests de casos límite y errores
+* Tests de reglas de negocio (cupo, duplicados, prerequisitos, pertenencia al curso)
+* Tests del boletín académico
 * Base de datos aislada para pruebas
 
 ---
@@ -308,9 +312,14 @@ npm run test:watch
 ✅ **Validaciones de negocio** por rol  
 ✅ **Password hashing** con bcryptjs  
 ✅ **Manejo de errores** centralizado  
-✅ **Tests automatizados** completos  
-✅ **Arquitectura limpia** por capas  
+✅ **Tests automatizados** — 45 tests en verde  
+✅ **Arquitectura limpia** por capas con Inyección de Dependencias  
 ✅ **Base de datos relacional** con referencias  
+✅ **Cupo máximo** por curso — no permite sobreventa de vacantes  
+✅ **Prevención de inscripción duplicada** — un alumno no puede inscribirse dos veces  
+✅ **Correlatividades (prerequisitos)** — requiere nota >= 6 para cursos avanzados  
+✅ **Consistencia académica** — solo se puede calificar a alumnos inscriptos en el curso  
+✅ **Boletín académico** con promedio por materia y estado (APROBADO / EN RIESGO / SIN CALIFICACIONES)  
 
 ---
 

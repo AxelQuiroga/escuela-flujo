@@ -18,6 +18,16 @@ export const gradeRepository = (GradeModel) => {
         .populate("curso", "name division");
     },
 
+    findByAlumnoWithCurso: async (alumnoId) => {
+      return await GradeModel.find({ alumno: alumnoId })
+        .populate("alumno", "name email")
+        .populate("curso", "name division");
+    },
+
+    findByAlumnoAndCurso: async (alumnoId, cursoId) => {
+      return await GradeModel.find({ alumno: alumnoId, curso: cursoId });
+    },
+
     findByCurso: async (cursoId) => {
       return await GradeModel.find({ curso: cursoId })
         .populate("alumno", "name email");

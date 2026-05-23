@@ -369,7 +369,78 @@ describe('API Endpoints Tests', () => {
   expect(response.body.message).toBe("El curso no tiene vacantes disponibles");
 });
 
-    
+    test('POST /course/:courseId/alumnos - No permite inscripción si el alumno no aprobó el prerequisito', async () => {
+      // Curso prerequisito SIN nota aprobatoria del alumno
+      const cursoBase = await Course.create({
+        name: 'Matemáticas I',
+        division: 'A',
+        profesor: profesorId,
+      });
+
+      // Curso avanzado que requiere haber aprobado cursoBase
+      const cursoAvanzado = await Course.create({
+        name: 'Matemáticas II',
+        division: 'A',
+        profesor: profesorId,
+        prerequisito: cursoBase._id
+      });
+
+      // Alumno nuevo sin ninguna nota en cursoBase
+      const alumnoSinPrereq = await User.create({
+        name: 'Alumno Sin Prereq',
+        email: 'sinprereq@test.com',
+        password: 'password123',
+        role: 'ALUMNO'
+      });
+
+      const response = await request(app)
+        .post(`/course/${cursoAvanzado._id}/alumnos`)
+        .set('Authorization', `Bearer ${profesorToken}`)
+        .send({ alumnoId: alumnoSinPrereq._id });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('El alumno no aprobó el curso prerequisito requerido');
+    });
+
+    test('POST /course/:courseId/alumnos - Permite inscripción si el alumno aprobó el prerequisito', async () => {
+      // Curso prerequisito
+      const cursoBase = await Course.create({
+        name: 'Historia I',
+        division: 'B',
+        profesor: profesorId,
+      });
+
+      // Alumno nuevo con nota aprobatoria en cursoBase
+      const alumnoAprobado = await User.create({
+        name: 'Alumno Aprobado',
+        email: 'aprobado@test.com',
+        password: 'password123',
+        role: 'ALUMNO'
+      });
+
+      await Grade.create({
+        alumno: alumnoAprobado._id,
+        curso: cursoBase._id,
+        titulo: 'Final Historia I',
+        nota: 7  // >= 6, aprobado ✅
+      });
+
+      // Curso avanzado que requiere cursoBase
+      const cursoAvanzado = await Course.create({
+        name: 'Historia II',
+        division: 'B',
+        profesor: profesorId,
+        prerequisito: cursoBase._id
+      });
+
+      const response = await request(app)
+        .post(`/course/${cursoAvanzado._id}/alumnos`)
+        .set('Authorization', `Bearer ${profesorToken}`)
+        .send({ alumnoId: alumnoAprobado._id });
+
+      expect(response.status).toBe(200);
+    });
+
   });
 
   describe('GRADE Endpoints', () => {
@@ -467,6 +538,31 @@ describe('API Endpoints Tests', () => {
       expect(response.status).toBe(403);
     });
 
+    test('POST /grade - No permite calificar a un alumno no inscripto en el curso', async () => {
+      // Alumno que NO está inscripto en el curso
+      const alumnoNoInscripto = await User.create({
+        name: 'Alumno Externo',
+        email: 'externo@test.com',
+        password: 'password123',
+        role: 'ALUMNO'
+      });
+
+      const newGrade = {
+        alumno: alumnoNoInscripto._id,
+        curso: courseId,
+        titulo: 'Parcial Trampa',
+        nota: 7
+      };
+
+      const response = await request(app)
+        .post('/grade')
+        .set('Authorization', `Bearer ${profesorToken}`)
+        .send(newGrade);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('El alumno no pertenece a este curso');
+    });
+
     test('PUT /grade/:id - Profesor puede actualizar nota', async () => {
       const updateData = { nota: 10 };
 
@@ -518,6 +614,45 @@ describe('API Endpoints Tests', () => {
 
       expect(response.status).toBe(400);
     });
+
+    test('GET /grade/alumno/:alumnoId/boletin - Alumno puede ver su propio boletín', async () => {
+      const response = await request(app)
+        .get(`/grade/alumno/${alumnoId}/boletin`)
+        .set('Authorization', `Bearer ${alumnoToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('boletin');
+      expect(response.body).toHaveProperty('promedioGeneral');
+      expect(response.body.boletin).toHaveLength(1);
+      expect(response.body.boletin[0]).toHaveProperty('estado', 'APROBADO'); // nota 8 >= 6
+      expect(response.body.boletin[0]).toHaveProperty('promedio', 8);
+    });
+
+    test('GET /grade/alumno/:alumnoId/boletin - Alumno no puede ver el boletín de otro', async () => {
+      const otroAlumno = await User.create({
+        name: 'Otro Alumno Boletin',
+        email: 'otro.boletin@test.com',
+        password: 'password123',
+        role: 'ALUMNO'
+      });
+
+      const response = await request(app)
+        .get(`/grade/alumno/${otroAlumno._id}/boletin`)
+        .set('Authorization', `Bearer ${alumnoToken}`);
+
+      expect(response.status).toBe(403);
+    });
+
+    test('GET /grade/alumno/:alumnoId/boletin - Director puede ver el boletín de cualquier alumno', async () => {
+      const response = await request(app)
+        .get(`/grade/alumno/${alumnoId}/boletin`)
+        .set('Authorization', `Bearer ${directorToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('boletin');
+      expect(response.body).toHaveProperty('promedioGeneral');
+    });
+
   });
 
   describe('Middleware Tests', () => {

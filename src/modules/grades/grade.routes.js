@@ -10,16 +10,19 @@ import roleMiddleware from "../../middlewares/role.middleware.js";
 import { courseRepository } from "../courses/course.repository.js";
 import { courseService } from "../courses/course.service.js"
 
-const courseModel = Course;
+const repoDeCursos = courseRepository(Course);
 const repoDeNotas = gradeRepository(Grade);
-const servicioDeNotas = gradeService(repoDeNotas);
-const servicioDeCursos = courseService(courseRepository(courseModel));
+const servicioDeNotas = gradeService(repoDeNotas, repoDeCursos);
+const servicioDeCursos = courseService(repoDeCursos, repoDeNotas);
 const controller = createGradeController(servicioDeNotas, servicioDeCursos);
 
 const router = Router();
 
 // 👑 DIRECTOR y PROFESOR
 router.get("/", authMiddleware, roleMiddleware("DIRECTOR", "PROFESOR"), controller.getGrades);
+
+// 📋 Boletín académico del alumno (ALUMNO ve el suyo, DIRECTOR ve cualquiera)
+router.get("/alumno/:alumnoId/boletin", authMiddleware, controller.getBoletinByAlumno);
 
 // 👨‍🎓 ver sus notas
 router.get("/alumno/:alumnoId", authMiddleware, controller.getGradesByAlumno);

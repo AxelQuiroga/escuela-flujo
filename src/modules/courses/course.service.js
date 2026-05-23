@@ -1,4 +1,4 @@
-export const courseService = (courseRepository) => {
+export const courseService = (courseRepository, gradeRepository) => {
 
   return {
 
@@ -76,6 +76,24 @@ export const courseService = (courseRepository) => {
         const error = new Error("El curso no tiene vacantes disponibles");
         error.status = 400;
         throw error;
+      }
+
+      // 📚 Validar prerequisito si el curso lo requiere
+      if (course.prerequisito) {
+        const notasEnPrerequisito = await gradeRepository.findByAlumnoAndCurso(
+          alumnoId,
+          course.prerequisito
+        );
+
+        const aprobo = notasEnPrerequisito.some((n) => n.nota >= 6);
+
+        if (!aprobo) {
+          const error = new Error(
+            "El alumno no aprobó el curso prerequisito requerido"
+          );
+          error.status = 400;
+          throw error;
+        }
       }
 
       return await courseRepository.addAlumno(courseId, alumnoId);

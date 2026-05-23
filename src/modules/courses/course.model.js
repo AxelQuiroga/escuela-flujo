@@ -27,8 +27,15 @@ const courseSchema = new mongoose.Schema(
     cupoMaximo: {
       type: Number,
       required: true,
-      default: 30 
+      default: 30
+    },
+
+    prerequisito: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
+      default: null
     }
+
   },
   {
     timestamps: true
