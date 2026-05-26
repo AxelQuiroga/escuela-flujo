@@ -1,23 +1,20 @@
+import { ForbiddenError, ValidationError } from "../../errors/domain.errors.js";
+
 const getUserId = (userObjOrId) => {
   if (!userObjOrId) return "";
   return userObjOrId._id ? userObjOrId._id.toString() : userObjOrId.toString();
 };
 
 export const createGradeController = (gradeService, courseService) => {
-
   return {
     getGrades: async (req, res, next) => {
       try {
         const { role, id } = req.user;
 
-        let grades;
-
-        if (role === "DIRECTOR") {
-          grades = await gradeService.getAllGrades();
-        } else {
-          // PROFESOR → solo sus cursos
-          grades = await gradeService.getGradesByProfesor(id);
-        }
+        const grades =
+          role === "DIRECTOR"
+            ? await gradeService.getAllGrades()
+            : await gradeService.getGradesByProfesor(id);
 
         res.status(200).json(grades);
       } catch (error) {
@@ -25,21 +22,17 @@ export const createGradeController = (gradeService, courseService) => {
       }
     },
 
-
     getGradesByAlumno: async (req, res, next) => {
       try {
         const { role, id } = req.user;
         const { alumnoId } = req.params;
 
-        // 👨‍🎓 solo puede ver lo suyo
         if (role === "ALUMNO" && alumnoId !== id) {
-          return res.status(403).json({ message: "No autorizado" });
+          throw new ForbiddenError("FORBIDDEN", "No autorizado");
         }
 
         const grades = await gradeService.getGradesByAlumno(alumnoId);
-
         res.status(200).json(grades);
-
       } catch (error) {
         next(error);
       }
@@ -50,15 +43,12 @@ export const createGradeController = (gradeService, courseService) => {
         const { role, id } = req.user;
         const { alumnoId } = req.params;
 
-        // 👨‍🎓 solo puede ver su propio boletín | 👑 Director puede ver cualquiera
         if (role === "ALUMNO" && alumnoId !== id) {
-          return res.status(403).json({ message: "No autorizado" });
+          throw new ForbiddenError("FORBIDDEN", "No autorizado");
         }
 
         const boletin = await gradeService.getBoletinByAlumno(alumnoId);
-
         res.status(200).json(boletin);
-
       } catch (error) {
         next(error);
       }
@@ -67,33 +57,21 @@ export const createGradeController = (gradeService, courseService) => {
     getGrade: async (req, res, next) => {
       try {
         const { role, id } = req.user;
-
         const grade = await gradeService.getGradeById(req.params.id);
 
-        if (!grade) {
-          return res.status(404).json({ message: "Nota no encontrada" });
-        }
-
-        // 👑 Director
         if (role === "DIRECTOR") {
-          return res.json(grade);
+          return res.status(200).json(grade);
         }
 
-        // 👨‍🎓 Alumno
         if (role === "ALUMNO" && getUserId(grade.alumno) === id) {
-          return res.json(grade);
+          return res.status(200).json(grade);
         }
 
-        // 👨‍🏫 Profesor → validar curso
-        if (
-          role === "PROFESOR" &&
-          getUserId(grade.curso.profesor) === id
-        ) {
-          return res.json(grade);
+        if (role === "PROFESOR" && getUserId(grade.curso.profesor) === id) {
+          return res.status(200).json(grade);
         }
 
-        return res.status(403).json({ message: "No autorizado" });
-
+        throw new ForbiddenError("FORBIDDEN", "No autorizado");
       } catch (error) {
         next(error);
       }
@@ -104,25 +82,19 @@ export const createGradeController = (gradeService, courseService) => {
         const { id } = req.user;
 
         if (!req.body.curso) {
-          return res.status(400).json({ message: "El curso es requerido" });
+          throw new ValidationError("COURSE_REQUIRED", "El curso es requerido");
         }
 
-        // 🔐 Verificar que el profesor es dueño del curso
+        // Verificar que el profesor es dueño del curso
         const course = await courseService.getCourseById(req.body.curso);
 
-        if (!course) {
-          return res.status(404).json({ message: "Curso no encontrado" });
-        }
-
         if (getUserId(course.profesor) !== id) {
-          return res.status(403).json({ message: "No autorizado" });
+          throw new ForbiddenError("FORBIDDEN", "No autorizado");
         }
 
-        // ✅ La validación de alumno inscripto se hace en gradeService.createGrade
+        // La validación de alumno inscripto se hace en gradeService.createGrade
         const grade = await gradeService.createGrade(req.body);
-
         res.status(201).json(grade);
-
       } catch (error) {
         next(error);
       }
@@ -131,21 +103,14 @@ export const createGradeController = (gradeService, courseService) => {
     updateGrade: async (req, res, next) => {
       try {
         const { id } = req.user;
-
         const grade = await gradeService.getGradeById(req.params.id);
 
-        if (!grade) {
-          return res.status(404).json({ message: "Nota no encontrada" });
-        }
-
         if (getUserId(grade.curso.profesor) !== id) {
-          return res.status(403).json({ message: "No autorizado" });
+          throw new ForbiddenError("FORBIDDEN", "No autorizado");
         }
 
         const updated = await gradeService.updateGrade(req.params.id, req.body);
-
         res.status(200).json(updated);
-
       } catch (error) {
         next(error);
       }
@@ -154,24 +119,18 @@ export const createGradeController = (gradeService, courseService) => {
     deleteGrade: async (req, res, next) => {
       try {
         const { id } = req.user;
-
         const grade = await gradeService.getGradeById(req.params.id);
 
-        if (!grade) {
-          return res.status(404).json({ message: "Nota no encontrada" });
-        }
-
         if (getUserId(grade.curso.profesor) !== id) {
-          return res.status(403).json({ message: "No autorizado" });
+          throw new ForbiddenError("FORBIDDEN", "No autorizado");
         }
 
         await gradeService.deleteGrade(req.params.id);
-
         res.status(200).send();
-
       } catch (error) {
         next(error);
       }
-    },
-  }
-}
+    }
+  };
+};
+

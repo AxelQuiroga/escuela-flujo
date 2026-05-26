@@ -1,26 +1,17 @@
 import { Router } from "express";
 
-import { courseService } from "./course.service.js";
-import { courseRepository } from "./course.repository.js"
-import { authMiddleware } from "../../middlewares/auth.middleware.js";
-import roleMiddleware from "../../middlewares/role.middleware.js";
-import { courseController } from "./course.controller.js"
-import { Course } from "./course.model.js";
-import { Grade } from "../grades/grade.model.js";
-import { gradeRepository } from "../grades/grade.repository.js";
+export const createCourseRouter = ({
+  controller,
+  authMiddleware,
+  roleMiddleware
+}) => {
+  const router = Router();
 
-const repoDeCursos = courseRepository(Course);
-const repoDeNotas = gradeRepository(Grade);
-const service = courseService(repoDeCursos, repoDeNotas);
-const controller = courseController(service);
-
-const router = Router();
-
-// 👑 DIRECTOR y PROFESOR pueden ver cursos
+// 👑 DIRECTOR, PROFESOR y ALUMNO pueden listar cursos (filtrado real se hace en service)
 router.get(
   "/",
   authMiddleware,
-  roleMiddleware("DIRECTOR", "PROFESOR"),
+  roleMiddleware("DIRECTOR", "PROFESOR", "ALUMNO"),
   controller.getCourses
 );
 
@@ -71,4 +62,5 @@ router.delete(
   controller.removeAlumno
 );
 
-export default router;
+  return router;
+};

@@ -1,21 +1,20 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { AuthError } from "../../errors/domain.errors.js";
 
 export const authService = (userRepository) => {
-
   return {
     login: async ({ email, password }) => {
-
       const user = await userRepository.findByEmail(email);
 
       if (!user) {
-        throw new Error("Credenciales inválidas");
+        throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
       }
 
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) {
-        throw new Error("Credenciales inválidas");
+        throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
       }
 
       const token = jwt.sign(
@@ -36,5 +35,6 @@ export const authService = (userRepository) => {
         }
       };
     }
-  }
-}
+  };
+};
+

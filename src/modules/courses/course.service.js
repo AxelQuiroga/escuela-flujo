@@ -1,21 +1,21 @@
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError
+} from "../../errors/domain.errors.js";
+
 export const courseService = (courseRepository, gradeRepository) => {
-
   return {
-
+    // Queries
     getAllCourses: async () => {
       return await courseRepository.findAll();
     },
 
     getCourseById: async (id) => {
-
       const course = await courseRepository.findById(id);
-
       if (!course) {
-        const error = new Error("Course not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("COURSE_NOT_FOUND", "Course not found", { id });
       }
-
       return course;
     },
 
@@ -23,58 +23,64 @@ export const courseService = (courseRepository, gradeRepository) => {
       return await courseRepository.findByProfesor(profesorId);
     },
 
+    getCoursesByAlumno: async (alumnoId) => {
+      return await courseRepository.findByAlumno(alumnoId);
+    },
+
+    /**
+     * Caso de uso: listado de cursos según el usuario autenticado.
+     * - DIRECTOR: todos
+     * - PROFESOR: sus cursos
+     * - ALUMNO: cursos donde está inscripto
+     */
+    getCoursesForUser: async ({ role, id }) => {
+      if (role === "DIRECTOR") return await courseRepository.findAll();
+      if (role === "PROFESOR") return await courseRepository.findByProfesor(id);
+      return await courseRepository.findByAlumno(id);
+    },
+
+    // Commands
     createCourse: async (data) => {
       return await courseRepository.create(data);
     },
 
     updateCourse: async (id, data) => {
-
       const course = await courseRepository.update(id, data);
-
       if (!course) {
-        const error = new Error("Course not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("COURSE_NOT_FOUND", "Course not found", { id });
       }
-
       return course;
     },
 
     deleteCourse: async (id) => {
-
       const course = await courseRepository.delete(id);
-
       if (!course) {
-        const error = new Error("Course not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("COURSE_NOT_FOUND", "Course not found", { id });
       }
-
       return course;
     },
 
     addAlumno: async (courseId, alumnoId) => {
-
       const course = await courseRepository.findById(courseId);
 
       if (!course) {
-        const error = new Error("Course not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("COURSE_NOT_FOUND", "Course not found", {
+          id: courseId
+        });
       }
 
       const yaInscripto = course.alumnos.some(
         (al) => al._id.toString() === alumnoId.toString()
       );
       if (yaInscripto) {
-        const error = new Error("El alumno ya está inscrito en este curso");
-        error.status = 400;
-        throw error;
+        throw new ConflictError(
+          "ALUMNO_ALREADY_ENROLLED",
+          "El alumno ya está inscrito en este curso",
+          { courseId, alumnoId }
+        );
       }
-      // Concurrencia: NO validar cupo con course.alumnos.length acá.
-      // Esto es vulnerable a race conditions. El cupo se garantiza en el update atómico del repositorio.
 
-      // 📚 Validar prerequisito si el curso lo requiere
+      // Validar prerequisito (best-effort; cupo es fuerte en DB)
       if (course.prerequisito) {
         const notasEnPrerequisito = await gradeRepository.findByAlumnoAndCurso(
           alumnoId,
@@ -84,38 +90,53 @@ export const courseService = (courseRepository, gradeRepository) => {
         const aprobo = notasEnPrerequisito.some((n) => n.nota >= 6);
 
         if (!aprobo) {
-          const error = new Error(
-            "El alumno no aprobó el curso prerequisito requerido"
+          throw new ValidationError(
+            "PREREQUISITE_NOT_PASSED",
+            "El alumno no aprobó el curso prerequisito requerido",
+            { courseId, alumnoId, prerequisito: course.prerequisito.toString() }
           );
-          error.status = 400;
-          throw error;
         }
       }
 
+      // Concurrencia: cupo garantizado con update atómico en repositorio
       const updated = await courseRepository.addAlumno(courseId, alumnoId);
 
-      // Si el update atómico no matcheó, asumimos cupo lleno bajo concurrencia.
       if (!updated) {
-        const error = new Error("El curso no tiene vacantes disponibles");
-        error.status = 400;
-        throw error;
+        // Puede fallar por cupo lleno o porque otro request inscribió al mismo alumno
+        // entre nuestra lectura y el update atómico.
+        const refreshed = await courseRepository.findById(courseId);
+        const nowInscripto = refreshed?.alumnos?.some(
+          (al) => al._id.toString() === alumnoId.toString()
+        );
+
+        if (nowInscripto) {
+          throw new ConflictError(
+            "ALUMNO_ALREADY_ENROLLED",
+            "El alumno ya está inscrito en este curso",
+            { courseId, alumnoId }
+          );
+        }
+
+        throw new ConflictError(
+          "COURSE_FULL",
+          "El curso no tiene vacantes disponibles",
+          { courseId, alumnoId }
+        );
       }
 
       return updated;
     },
 
     removeAlumno: async (courseId, alumnoId) => {
-
       const course = await courseRepository.removeAlumno(courseId, alumnoId);
 
       if (!course) {
-        const error = new Error("Course not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("COURSE_NOT_FOUND", "Course not found", {
+          id: courseId
+        });
       }
 
       return course;
     }
-
   };
-}
+};

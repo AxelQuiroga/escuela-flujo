@@ -1,4 +1,4 @@
-import request from 'supertest';
+﻿import request from 'supertest';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import app from '../src/app.js';
@@ -13,12 +13,12 @@ describe('API Endpoints Tests', () => {
   let mongoConnection;
 
   beforeAll(async () => {
-    // Conexión a MongoDB de prueba
+    // ConexiÃ³n a MongoDB de prueba
     mongoConnection = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/test_school_management');
   }, 30000);
 
   afterAll(async () => {
-    // Cerrar conexión
+    // Cerrar conexiÃ³n
     if (mongoConnection) {
       await mongoose.connection.close();
     }
@@ -30,7 +30,7 @@ describe('API Endpoints Tests', () => {
     await Course.deleteMany({});
     await Grade.deleteMany({});
 
-    // Hashear contraseñas
+    // Hashear contraseÃ±as
     const hashedPassword = await bcrypt.hash('password123', 10);
 
     // Crear usuarios de prueba
@@ -77,7 +77,7 @@ describe('API Endpoints Tests', () => {
 
     // Crear curso de prueba
     const course = await Course.create({
-      name: 'Matemáticas',
+      name: 'MatemÃ¡ticas',
       division: 'A',
       profesor: profesorId,
       alumnos: [alumnoId]
@@ -96,7 +96,7 @@ describe('API Endpoints Tests', () => {
       expect(response.body).toHaveProperty('user');
     });
 
-    test('POST /auth/login - Credenciales inválidas', async () => {
+    test('POST /auth/login - Credenciales invÃ¡lidas', async () => {
       const response = await request(app)
         .post('/auth/login')
         .send({ email: 'director@test.com', password: 'wrongpassword' });
@@ -279,7 +279,7 @@ describe('API Endpoints Tests', () => {
     });
 
     test('PUT /course/:id - Profesor puede actualizar su curso', async () => {
-      const updateData = { name: 'Matemáticas Avanzadas' };
+      const updateData = { name: 'MatemÃ¡ticas Avanzadas' };
 
       const response = await request(app)
         .put(`/course/${courseId}`)
@@ -287,7 +287,7 @@ describe('API Endpoints Tests', () => {
         .send(updateData);
 
       expect(response.status).toBe(200);
-      expect(response.body.name).toBe('Matemáticas Avanzadas');
+      expect(response.body.name).toBe('MatemÃ¡ticas Avanzadas');
     });
 
     test('DELETE /course/:id - Director puede eliminar curso', async () => {
@@ -330,18 +330,18 @@ describe('API Endpoints Tests', () => {
       expect(response.status).toBe(200);
     });
 
-    test('POST /course/:courseId/alumnos - No permite agregar a un alumno que ya está inscrito', async () => {
+    test('POST /course/:courseId/alumnos - No permite agregar a un alumno que ya estÃ¡ inscrito', async () => {
   // Intentamos agregar a 'alumnoId', que ya forma parte de 'courseId' (creado en el beforeEach)
   const response = await request(app)
     .post(`/course/${courseId}/alumnos`)
     .set('Authorization', `Bearer ${profesorToken}`)
     .send({ alumnoId });
 
-  expect(response.status).toBe(400);
-  expect(response.body.message).toBe("El alumno ya está inscrito en este curso");
+  expect(response.status).toBe(409);
+  expect(response.body.error.message).toBe("El alumno ya está inscrito en este curso");
 });
 
-  test('POST /course/:courseId/alumnos - No permite agregar alumno si el cupo está lleno', async () => {
+  test('POST /course/:courseId/alumnos - No permite agregar alumno si el cupo estÃ¡ lleno', async () => {
   // Creamos un curso con cupoMaximo: 1 que ya tiene a 'alumnoId' inscripto
   const fullCourse = await Course.create({
     name: 'Historia Antigua',
@@ -365,21 +365,21 @@ describe('API Endpoints Tests', () => {
     .set('Authorization', `Bearer ${profesorToken}`)
     .send({ alumnoId: extraAlumno._id });
 
-  expect(response.status).toBe(400);
-  expect(response.body.message).toBe("El curso no tiene vacantes disponibles");
+  expect(response.status).toBe(409);
+  expect(response.body.error.message).toBe("El curso no tiene vacantes disponibles");
 });
 
-    test('POST /course/:courseId/alumnos - No permite inscripción si el alumno no aprobó el prerequisito', async () => {
+    test('POST /course/:courseId/alumnos - No permite inscripciÃ³n si el alumno no aprobÃ³ el prerequisito', async () => {
       // Curso prerequisito SIN nota aprobatoria del alumno
       const cursoBase = await Course.create({
-        name: 'Matemáticas I',
+        name: 'MatemÃ¡ticas I',
         division: 'A',
         profesor: profesorId,
       });
 
       // Curso avanzado que requiere haber aprobado cursoBase
       const cursoAvanzado = await Course.create({
-        name: 'Matemáticas II',
+        name: 'MatemÃ¡ticas II',
         division: 'A',
         profesor: profesorId,
         prerequisito: cursoBase._id
@@ -399,10 +399,10 @@ describe('API Endpoints Tests', () => {
         .send({ alumnoId: alumnoSinPrereq._id });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('El alumno no aprobó el curso prerequisito requerido');
+      expect(response.body.error.message).toBe('El alumno no aprobó el curso prerequisito requerido');
     });
 
-    test('POST /course/:courseId/alumnos - Permite inscripción si el alumno aprobó el prerequisito', async () => {
+    test('POST /course/:courseId/alumnos - Permite inscripciÃ³n si el alumno aprobÃ³ el prerequisito', async () => {
       // Curso prerequisito
       const cursoBase = await Course.create({
         name: 'Historia I',
@@ -422,7 +422,7 @@ describe('API Endpoints Tests', () => {
         alumno: alumnoAprobado._id,
         curso: cursoBase._id,
         titulo: 'Final Historia I',
-        nota: 7  // >= 6, aprobado ✅
+        nota: 7  // >= 6, aprobado âœ…
       });
 
       // Curso avanzado que requiere cursoBase
@@ -539,7 +539,7 @@ describe('API Endpoints Tests', () => {
     });
 
     test('POST /grade - No permite calificar a un alumno no inscripto en el curso', async () => {
-      // Alumno que NO está inscripto en el curso
+      // Alumno que NO estÃ¡ inscripto en el curso
       const alumnoNoInscripto = await User.create({
         name: 'Alumno Externo',
         email: 'externo@test.com',
@@ -560,7 +560,7 @@ describe('API Endpoints Tests', () => {
         .send(newGrade);
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('El alumno no pertenece a este curso');
+      expect(response.body.error.message).toBe('El alumno no pertenece a este curso');
     });
 
     test('PUT /grade/:id - Profesor puede actualizar nota', async () => {
@@ -583,12 +583,12 @@ describe('API Endpoints Tests', () => {
       expect(response.status).toBe(200);
     });
 
-    test('POST /grade - Validación de rango de nota (1-10)', async () => {
+    test('POST /grade - ValidaciÃ³n de rango de nota (1-10)', async () => {
       const newGrade = {
         alumno: alumnoId,
         curso: courseId,
         titulo: 'Paracial 3',
-        nota: 11 // Nota inválida
+        nota: 11 // Nota invÃ¡lida
       };
 
       const response = await request(app)
@@ -599,7 +599,7 @@ describe('API Endpoints Tests', () => {
       expect(response.status).toBe(400);
     });
 
-    test('POST /grade - Validación de campos requeridos', async () => {
+    test('POST /grade - ValidaciÃ³n de campos requeridos', async () => {
       const newGrade = {
         alumno: alumnoId,
         // falta curso
@@ -615,7 +615,7 @@ describe('API Endpoints Tests', () => {
       expect(response.status).toBe(400);
     });
 
-    test('GET /grade/alumno/:alumnoId/boletin - Alumno puede ver su propio boletín', async () => {
+    test('GET /grade/alumno/:alumnoId/boletin - Alumno puede ver su propio boletÃ­n', async () => {
       const response = await request(app)
         .get(`/grade/alumno/${alumnoId}/boletin`)
         .set('Authorization', `Bearer ${alumnoToken}`);
@@ -628,7 +628,7 @@ describe('API Endpoints Tests', () => {
       expect(response.body.boletin[0]).toHaveProperty('promedio', 8);
     });
 
-    test('GET /grade/alumno/:alumnoId/boletin - Alumno no puede ver el boletín de otro', async () => {
+    test('GET /grade/alumno/:alumnoId/boletin - Alumno no puede ver el boletÃ­n de otro', async () => {
       const otroAlumno = await User.create({
         name: 'Otro Alumno Boletin',
         email: 'otro.boletin@test.com',
@@ -643,7 +643,7 @@ describe('API Endpoints Tests', () => {
       expect(response.status).toBe(403);
     });
 
-    test('GET /grade/alumno/:alumnoId/boletin - Director puede ver el boletín de cualquier alumno', async () => {
+    test('GET /grade/alumno/:alumnoId/boletin - Director puede ver el boletÃ­n de cualquier alumno', async () => {
       const response = await request(app)
         .get(`/grade/alumno/${alumnoId}/boletin`)
         .set('Authorization', `Bearer ${directorToken}`);
@@ -656,7 +656,7 @@ describe('API Endpoints Tests', () => {
   });
 
   describe('COURSE Concurrency', () => {
-    test('POST /course/:courseId/alumnos - Concurrencia: 10 alumnos intentan el Ãºltimo cupo (Promise.all)', async () => {
+    test('POST /course/:courseId/alumnos - Concurrencia: 10 alumnos intentan el ÃƒÂºltimo cupo (Promise.all)', async () => {
       // Curso con cupo 1 y sin alumnos inscriptos
       const limitedCourse = await Course.create({
         name: 'Curso Cupo 1',
@@ -678,7 +678,7 @@ describe('API Endpoints Tests', () => {
         )
       );
 
-      // Disparamos 10 requests en paralelo intentando "ganarse" el Ãºnico cupo
+      // Disparamos 10 requests en paralelo intentando "ganarse" el ÃƒÂºnico cupo
       const responses = await Promise.all(
         alumnos.map((a) =>
           request(app)
@@ -691,31 +691,31 @@ describe('API Endpoints Tests', () => {
       const ok = responses.filter((r) => r.status === 200);
       const fail = responses.filter((r) => r.status !== 200);
 
-      // Con el fix atÃ³mico: exactamente 1 Ã©xito.
-      // Con el cÃ³digo anterior: esto puede fallar (2+ Ã©xitos) por race condition.
+      // Con el fix atÃƒÂ³mico: exactamente 1 ÃƒÂ©xito.
+      // Con el cÃƒÂ³digo anterior: esto puede fallar (2+ ÃƒÂ©xitos) por race condition.
       expect(ok).toHaveLength(1);
 
-      // Los demÃ¡s deben fallar por cupo (contrato esperado)
+      // Los demÃƒÂ¡s deben fallar por cupo (contrato esperado)
       fail.forEach((r) => {
-        expect(r.status).toBe(400);
-        expect(r.body.message).toBe("El curso no tiene vacantes disponibles");
+        expect(r.status).toBe(409);
+        expect(r.body.error.message).toBe("El curso no tiene vacantes disponibles");
       });
 
-      // Invariante final: en DB no puede haber mÃ¡s de 1 inscripto
+      // Invariante final: en DB no puede haber mÃƒÂ¡s de 1 inscripto
       const courseAfter = await Course.findById(limitedCourse._id);
       expect(courseAfter.alumnos).toHaveLength(1);
     }, 30000);
   });
 
   describe('Middleware Tests', () => {
-    test('Acceso sin token - debería retornar 401', async () => {
+    test('Acceso sin token - deberÃ­a retornar 401', async () => {
       const response = await request(app)
         .get('/user');
 
       expect(response.status).toBe(401);
     });
 
-    test('Token inválido - debería retornar 401', async () => {
+    test('Token invÃ¡lido - deberÃ­a retornar 401', async () => {
       const response = await request(app)
         .get('/user')
         .set('Authorization', 'Bearer invalidtoken');
@@ -723,7 +723,7 @@ describe('API Endpoints Tests', () => {
       expect(response.status).toBe(401);
     });
 
-    test('Acceso con rol incorrecto - debería retornar 403', async () => {
+    test('Acceso con rol incorrecto - deberÃ­a retornar 403', async () => {
       const response = await request(app)
         .post('/user')
         .set('Authorization', `Bearer ${alumnoToken}`)
@@ -738,3 +738,4 @@ describe('API Endpoints Tests', () => {
     });
   });
 });
+

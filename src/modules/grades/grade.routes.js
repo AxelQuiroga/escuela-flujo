@@ -1,22 +1,11 @@
 import { Router } from "express";
-import { Grade } from "./grade.model.js";
-import { gradeService } from "./grade.service.js";
-import { gradeRepository } from "./grade.repository.js"
-import { createGradeController } from "./grade.controller.js";
-import { Course } from "../courses/course.model.js";
-import { authMiddleware } from "../../middlewares/auth.middleware.js";
-import roleMiddleware from "../../middlewares/role.middleware.js";
 
-import { courseRepository } from "../courses/course.repository.js";
-import { courseService } from "../courses/course.service.js"
-
-const repoDeCursos = courseRepository(Course);
-const repoDeNotas = gradeRepository(Grade);
-const servicioDeNotas = gradeService(repoDeNotas, repoDeCursos);
-const servicioDeCursos = courseService(repoDeCursos, repoDeNotas);
-const controller = createGradeController(servicioDeNotas, servicioDeCursos);
-
-const router = Router();
+export const createGradeRouter = ({
+  controller,
+  authMiddleware,
+  roleMiddleware
+}) => {
+  const router = Router();
 
 // 👑 DIRECTOR y PROFESOR
 router.get("/", authMiddleware, roleMiddleware("DIRECTOR", "PROFESOR"), controller.getGrades);
@@ -39,4 +28,5 @@ router.put("/:id", authMiddleware, roleMiddleware("PROFESOR"), controller.update
 // 👨‍🏫 eliminar (opcional)
 router.delete("/:id", authMiddleware, roleMiddleware("PROFESOR"), controller.deleteGrade);
 
-export default router;
+  return router;
+};

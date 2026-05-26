@@ -19,6 +19,12 @@ export const courseRepository = (CourseModel) => {
       .populate("alumnos", "name email");
   },
 
+  findByAlumno: async (alumnoId) => {
+    return await CourseModel.find({ alumnos: alumnoId })
+      .populate("profesor", "name email")
+      .populate("alumnos", "name email");
+  },
+
   create: async (data) => {
     return await CourseModel.create(data);
   },
@@ -35,10 +41,6 @@ export const courseRepository = (CourseModel) => {
   },
 
   addAlumno: async (courseId, alumnoId) => {
-    // Concurrencia: asegurar cupo máximo a nivel DB.
-    // Solo agrega si:
-    // - el alumno NO estaba ya en el array (evita duplicados)
-    // - la cantidad de alumnos actual es menor al cupoMaximo
     return await CourseModel.findOneAndUpdate(
       {
         _id: courseId,

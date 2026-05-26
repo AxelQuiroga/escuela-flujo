@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { ConflictError, NotFoundError } from "../../errors/domain.errors.js";
 
 const SALT_ROUNDS = 10;
 
@@ -13,9 +14,7 @@ export const userService = (userRepository) => {
       const user = await userRepository.findById(id);
 
       if (!user) {
-        const error = new Error("User not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("USER_NOT_FOUND", "User not found", { id });
       }
 
       return user;
@@ -26,9 +25,9 @@ export const userService = (userRepository) => {
       const existingUser = await userRepository.findByEmail(data.email);
 
       if (existingUser) {
-        const error = new Error("Email already in use");
-        error.status = 400;
-        throw error;
+        throw new ConflictError("EMAIL_IN_USE", "Email already in use", {
+          email: data.email
+        });
       }
 
       // 🔐 HASH PASSWORD
@@ -49,9 +48,7 @@ export const userService = (userRepository) => {
       const user = await userRepository.update(id, data);
 
       if (!user) {
-        const error = new Error("User not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("USER_NOT_FOUND", "User not found", { id });
       }
 
       return user;
@@ -62,9 +59,7 @@ export const userService = (userRepository) => {
       const user = await userRepository.delete(id);
 
       if (!user) {
-        const error = new Error("User not found");
-        error.status = 404;
-        throw error;
+        throw new NotFoundError("USER_NOT_FOUND", "User not found", { id });
       }
 
       return user;
