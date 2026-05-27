@@ -1,4 +1,3 @@
-// error.middleware.js
 import {
   DomainError,
   NotFoundError,
@@ -7,6 +6,7 @@ import {
   AuthError,
   ForbiddenError
 } from "../errors/domain.errors.js";
+import { logger } from "../utils/logger.js";
 
 const toHttpStatus = (err) => {
   if (err instanceof NotFoundError) return 404;
@@ -53,7 +53,9 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // 4) Fallback
+  // 4) Fallback (unexpected errors)
+  logger.error({ err }, "Unhandled Server Error");
+
   return res.status(500).json({
     error: {
       code: "INTERNAL_ERROR",

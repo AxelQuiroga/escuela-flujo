@@ -1,10 +1,12 @@
 import express from 'express';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { requestLogger } from './middlewares/logger.middleware.js';
 import { createContainer } from './container.js';
 
 const app = express()
 
-app.use(express.json())
+app.use(express.json());
+app.use(requestLogger);
 
 const { routers } = createContainer();
 
