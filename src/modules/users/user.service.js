@@ -6,8 +6,8 @@ const SALT_ROUNDS = 10;
 export const userService = (userRepository) => {
   
   return {
-    getAllUsers: async () => {
-      return await userRepository.findAll();
+    getAllUsers: async (pagination) => {
+      return await userRepository.findAll(pagination);
     },
 
     getUserById: async (id) => {

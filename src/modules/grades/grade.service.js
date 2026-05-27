@@ -1,9 +1,9 @@
-import { NotFoundError, ValidationError } from "../../errors/domain.errors.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../../errors/domain.errors.js";
 
 export const gradeService = (gradeRepository, courseRepository) => {
   return {
-    getAllGrades: async () => {
-      return await gradeRepository.findAll();
+    getAllGrades: async (pagination) => {
+      return await gradeRepository.findAll(pagination);
     },
 
     getGradeById: async (id) => {
@@ -18,11 +18,21 @@ export const gradeService = (gradeRepository, courseRepository) => {
       return await gradeRepository.findByAlumno(alumnoId);
     },
 
-    getGradesByProfesor: async (profesorId) => {
-      return await gradeRepository.findByProfesor(profesorId);
+    getGradesByProfesor: async (profesorId, pagination) => {
+      // 1. Obtenemos los cursos del profesor (usamos el repo de cursos)
+      const cursos = await courseRepository.findByProfesor(profesorId);
+      const cursoIds = cursos.map((c) => c._id);
+
+      // 2. Si no tiene cursos, retornamos vacío enseguida para ahorrar viaje a BD
+      if (cursoIds.length === 0) {
+        return { data: [], total: 0 };
+      }
+
+      // 3. Obtenemos las notas de esos cursos, ya paginadas
+      return await gradeRepository.findByCursos(cursoIds, pagination);
     },
 
-    createGrade: async (data) => {
+    createGrade: async (data, professorId) => {
       // Regla de negocio: el alumno debe estar inscripto en el curso
       const course = await courseRepository.findById(data.curso);
 
@@ -31,6 +41,16 @@ export const gradeService = (gradeRepository, courseRepository) => {
           id: data.curso
         });
       }
+
+      // Regla de negocio: solo el profesor asignado al curso puede calificar
+      if (course.profesor._id.toString() !== professorId.toString()) {
+        throw new ForbiddenError(
+          "FORBIDDEN_GRADE_ACTION",
+          "Solo el profesor asignado al curso puede calificar",
+          { cursoId: data.curso, profesorId }
+        );
+      }
+
 
       const alumnoEnCurso = course.alumnos.some(
         (al) => al._id.toString() === data.alumno.toString()

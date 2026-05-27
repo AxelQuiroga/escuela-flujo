@@ -1,4 +1,4 @@
-﻿import request from 'supertest';
+import request from 'supertest';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import app from '../src/app.js';
@@ -120,7 +120,7 @@ describe('API Endpoints Tests', () => {
         .set('Authorization', `Bearer ${directorToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(3);
+      expect(response.body.data).toHaveLength(3);
     });
 
     test('GET /user - Profesor no puede ver todos los usuarios', async () => {
@@ -218,7 +218,7 @@ describe('API Endpoints Tests', () => {
         .set('Authorization', `Bearer ${directorToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(1);
+      expect(response.body.data).toHaveLength(1);
     });
 
     test('GET /course - Profesor puede ver cursos', async () => {
@@ -227,7 +227,7 @@ describe('API Endpoints Tests', () => {
         .set('Authorization', `Bearer ${profesorToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(1);
+      expect(response.body.data).toHaveLength(1);
     });
 
     test('GET /course - Alumno no puede ver lista de cursos', async () => {
@@ -460,7 +460,7 @@ describe('API Endpoints Tests', () => {
         .set('Authorization', `Bearer ${directorToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(1);
+      expect(response.body.data).toHaveLength(1);
     });
 
     test('GET /grade - Profesor puede ver todas las notas', async () => {
@@ -469,7 +469,7 @@ describe('API Endpoints Tests', () => {
         .set('Authorization', `Bearer ${profesorToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(1);
+      expect(response.body.data).toHaveLength(1);
     });
 
     test('GET /grade - Alumno no puede ver lista de notas', async () => {

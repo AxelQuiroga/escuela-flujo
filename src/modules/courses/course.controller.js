@@ -1,4 +1,5 @@
 import { ForbiddenError } from "../../errors/domain.errors.js";
+import { parsePagination, buildPaginatedResponse } from "../../utils/pagination.js";
 
 // helpers
 const getUserId = (userObjOrId) => {
@@ -15,8 +16,10 @@ export const courseController = (courseService) => {
   return {
     getCourses: async (req, res, next) => {
       try {
-        const courses = await courseService.getCoursesForUser(req.user);
-        res.status(200).json(courses);
+        const pagination = parsePagination(req.query);
+        const { data, total } = await courseService.getCoursesForUser(req.user, pagination);
+        
+        res.status(200).json(buildPaginatedResponse(data, total, pagination));
       } catch (error) {
         next(error);
       }

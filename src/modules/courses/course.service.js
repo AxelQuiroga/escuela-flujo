@@ -7,8 +7,8 @@ import {
 export const courseService = (courseRepository, gradeRepository) => {
   return {
     // Queries
-    getAllCourses: async () => {
-      return await courseRepository.findAll();
+    getAllCourses: async (pagination) => {
+      return await courseRepository.findAll(pagination);
     },
 
     getCourseById: async (id) => {
@@ -33,10 +33,10 @@ export const courseService = (courseRepository, gradeRepository) => {
      * - PROFESOR: sus cursos
      * - ALUMNO: cursos donde está inscripto
      */
-    getCoursesForUser: async ({ role, id }) => {
-      if (role === "DIRECTOR") return await courseRepository.findAll();
-      if (role === "PROFESOR") return await courseRepository.findByProfesor(id);
-      return await courseRepository.findByAlumno(id);
+    getCoursesForUser: async ({ role, id }, pagination) => {
+      if (role === "DIRECTOR") return await courseRepository.findAll(pagination);
+      if (role === "PROFESOR") return await courseRepository.findByProfesor(id, pagination);
+      return await courseRepository.findByAlumno(id, pagination);
     },
 
     // Commands

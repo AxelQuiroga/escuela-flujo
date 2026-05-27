@@ -1,8 +1,13 @@
 export const userRepository = (UserModel) => {
 
   return {
-    findAll: async () => {
-      return await UserModel.find().select("-password");
+    findAll: async ({ page, limit }) => {
+      const skip = (page - 1) * limit;
+      const [data, total] = await Promise.all([
+        UserModel.find().select("-password").skip(skip).limit(limit),
+        UserModel.countDocuments()
+      ]);
+      return { data, total };
     },
 
     findById: async (id) => {

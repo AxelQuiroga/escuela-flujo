@@ -1,10 +1,16 @@
 export const gradeRepository = (GradeModel) => {
 
   return {
-    findAll: async () => {
-      return await GradeModel.find()
-        .populate("alumno", "name email")
-        .populate("curso", "name division profesor");
+    findAll: async ({ page, limit }) => {
+      const skip = (page - 1) * limit;
+      const [data, total] = await Promise.all([
+        GradeModel.find()
+          .populate("alumno", "name email")
+          .populate("curso", "name division profesor")
+          .skip(skip).limit(limit),
+        GradeModel.countDocuments()
+      ]);
+      return { data, total };
     },
 
     findById: async (id) => {
@@ -33,14 +39,20 @@ export const gradeRepository = (GradeModel) => {
         .populate("alumno", "name email");
     },
 
-    findByProfesor: async (profesorId) => {
-      return await GradeModel.find()
-        .populate({
-          path: "curso",
-          match: { profesor: profesorId }
-        })
-        .populate("alumno")
-        .then(grades => grades.filter(g => g.curso !== null));
+    findByCursos: async (cursoIds, { page, limit }) => {
+      const skip = (page - 1) * limit;
+      const query = { curso: { $in: cursoIds } };
+
+      const [data, total] = await Promise.all([
+        GradeModel.find(query)
+          .populate("alumno", "name email")
+          .populate("curso", "name division")
+          .skip(skip)
+          .limit(limit),
+        GradeModel.countDocuments(query)
+      ]);
+
+      return { data, total };
     },
 
     create: async (data) => {

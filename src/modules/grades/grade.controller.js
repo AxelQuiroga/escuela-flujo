@@ -1,4 +1,5 @@
 import { ForbiddenError, ValidationError } from "../../errors/domain.errors.js";
+import { parsePagination, buildPaginatedResponse } from "../../utils/pagination.js";
 
 const getUserId = (userObjOrId) => {
   if (!userObjOrId) return "";
@@ -10,13 +11,18 @@ export const createGradeController = (gradeService, courseService) => {
     getGrades: async (req, res, next) => {
       try {
         const { role, id } = req.user;
+        const pagination = parsePagination(req.query);
 
-        const grades =
-          role === "DIRECTOR"
-            ? await gradeService.getAllGrades()
-            : await gradeService.getGradesByProfesor(id);
+        let result;
 
-        res.status(200).json(grades);
+        if (role === "DIRECTOR") {
+          result = await gradeService.getAllGrades(pagination);
+        } else {
+          // PROFESOR
+          result = await gradeService.getGradesByProfesor(id, pagination);
+        }
+
+        res.status(200).json(buildPaginatedResponse(result.data, result.total, pagination));
       } catch (error) {
         next(error);
       }
@@ -93,7 +99,7 @@ export const createGradeController = (gradeService, courseService) => {
         }
 
         // La validación de alumno inscripto se hace en gradeService.createGrade
-        const grade = await gradeService.createGrade(req.body);
+        const grade = await gradeService.createGrade(req.body, id);
         res.status(201).json(grade);
       } catch (error) {
         next(error);
