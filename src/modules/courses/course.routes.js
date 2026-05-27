@@ -11,7 +11,7 @@ export const createCourseRouter = ({
 router.get(
   "/",
   authMiddleware,
-  roleMiddleware("DIRECTOR", "PROFESOR", "ALUMNO"),
+  roleMiddleware("DIRECTOR", "PROFESOR"),
   controller.getCourses
 );
 
